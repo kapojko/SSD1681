@@ -2,6 +2,8 @@
 #define WS15EP2_H
 
 // Based on https://github.com/waveshareteam/e-Paper/tree/master/Arduino/epd1in54_V2
+// Note, that original datasheet contains a lot of errors
+// But it seems, that module uses SSD1681 chip which datasheet is much more accurate
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -44,6 +46,10 @@
 #define WS15EP2_RAM_OPTION_NORMAL 0
 #define WS15EP2_RAM_OPTION_BYPASS_0 0b100
 #define WS15EP2_RAM_OPTION_INVERSE 0b1000
+
+#define WS15EP2_TEMP_SENSOR_EXTERNAL 0x48
+#define WS15EP2_TEMP_SENSOR_INTERNAL 0x80
+#define WS15EP2_TEMP_SENSOR_DEF WS15EP2_TEMP_SENSOR_EXTERNAL
 
 // Display update sequence abbreviations:
 // EC - enable clock signal
@@ -104,7 +110,9 @@ bool Ws15eP2_SetDriverOutput(int muxGateLines, int firstGate, int scanningOrder,
 bool Ws15eP2_DeepSleep(void);
 bool Ws15eP2_SetDataEntryMode(int dataEntryMode, int dataDirection);
 bool Ws15eP2_SoftwareReset(void);
-bool Ws15eP2_SetTemperature(int tempDegC);
+bool Ws15eP2_SetTemperatureSensor(int tempSensor);
+bool Ws15eP2_WriteTemperature(int tempDegC);
+bool Ws15eP2_ReadTemperature(int *tempDegC);
 bool Ws15eP2_MasterActivation(void);
 bool Ws15eP2_SetRamContentOption(int redRamOption, int bwRamOption);
 bool Ws15eP2_SetDisplayUpdateSequence(int displayUpdateSequence);

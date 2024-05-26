@@ -7,6 +7,9 @@
 #define WS15EP2_CMD_DEEP_SLEEP_MODE 0x10
 #define WS15EP2_CMD_DATA_ENTRY_MODE 0x11
 #define WS15EP2_CMD_SW_RESET 0x12
+#define WS15EP2_CMD_TEMP_SENSOR 0x18 // NOTE: taken from SSD1681 datasheet
+#define WS15EP2_CMD_WRITE_TEMP_REGISTER 0x1A // NOTE: taken from SSD1681 datasheet
+#define WS15EP2_CMD_READ_TEMP_REGISTER 0x1B // NOTE: taken from SSD1681 datasheet
 #define WS15EP2_CMD_MASTER_ACTIVATION 0x20
 #define WS15EP2_CMD_DISPLAY_UPDATE_CONTROL_1 0x21
 #define WS15EP2_CMD_DISPLAY_UPDATE_CONTROL_2 0x22
@@ -22,8 +25,10 @@
 #define WS15EP2_CMD_LOAD_WS_OTP 0x31
 #define WS15EP2_CMD_WRITE_LUT 0x32
 #define WS15EP2_CMD_PROGRAM_OTP_SELECTION 0x36
+#define WS15EP2_CMD_WRITE_DISPLAY_OPTION 0x37 // NOTE: taken from SSD1681 datasheet
 #define WS15EP2_CMD_WRITE_USER_ID 0x38
 #define WS15EP2_CMD_OTP_PROGRAM_MODE 0x39
+#define WS15EP2_CMD_BORDER_WAVEFORM 0x3C // NOTE: taken from SSD1681 datasheet, missed in original one
 #define WS15EP2_CMD_SET_RAM_X 0x44
 #define WS15EP2_CMD_SET_RAM_Y 0x45
 #define WS15EP2_CMD_SET_RAM_X_COUNTER 0x4E
@@ -167,7 +172,7 @@ static bool readCommandData(uint8_t command, uint8_t *data, int len) {
     return true;
 }
 
-static uint16_t convertTemperature(int tempDegC) {
+static uint16_t encodeTemperature(int tempDegC) {
     // Apply LSB
     int16_t tempSigned = tempDegC * 16;
 
@@ -175,6 +180,23 @@ static uint16_t convertTemperature(int tempDegC) {
     uint16_t temp = (*(uint16_t *)&tempSigned) & 0xFFF;
 
     return temp;
+}
+
+static int decodeTemperature(uint16_t temp) {
+    // Fill last 4 bits with the same value as 12 bit
+    uint16_t temp16Bit = temp;
+    int negativeSign = temp16Bit & 0x800;
+    if (negativeSign) {
+        temp16Bit |= 0xF000;
+    }
+
+    // Convert to signed
+    int16_t tempSigned = *(int16_t *)&temp16Bit;
+
+    // Convert to Celsius
+    int tempC = tempSigned / 16;
+
+    return tempC;
 }
 
 void Ws15eP2_Init(struct Ws15eP2_Platform *platformPtr) {
@@ -259,25 +281,57 @@ bool Ws15eP2_SoftwareReset(void) {
     return ok;
 }
 
-bool Ws15eP2_SetTemperature(int tempDegC) {
+bool Ws15eP2_SetTemperatureSensor(int tempSensor) {
+    // NOTE: the command is from SSD1681 datasheet
+
+    bool ok = true;
+
+    ok = ok & sendCommand(WS15EP2_CMD_TEMP_SENSOR);
+
+    uint8_t data = tempSensor & 0xFF;
+    ok = ok & sendData(&data, sizeof(data));
+
+    return ok;
+}
+
+bool Ws15eP2_WriteTemperature(int tempDegC) {
+    // NOTE: the command is from SSD1681 datasheet
+    // (it is mentioned in the original datasheet but not described in command reference table)
+
     bool ok = true;
 
     // Convert temperature
-    uint16_t temp = convertTemperature(tempDegC);
+    uint16_t temp = encodeTemperature(tempDegC);
 
     // Send command
-    // NOTE: this command is mentioned in datasheet but not described in command reference table
-    ok = ok & sendCommand(0x1A);
+    ok = ok & sendCommand(WS15EP2_CMD_WRITE_TEMP_REGISTER);
 
     // Send command data
     uint8_t data[2] = {
-        (temp & 0xFF),
-        ((temp >> 8) & 0xFF),
+        ((temp >> 4) & 0xFF),
+        ((temp << 4) & 0xF0),
     };
     ok = ok & sendData(data, sizeof(data));
 
     return ok; 
 }
+
+bool Ws15eP2_ReadTemperature(int *tempDegC) {
+    // NOTE: the command is from SSD1681 datasheet
+
+    bool ok = true;
+
+    // Send command and read 2 bytes
+    uint8_t data[2];
+    ok = ok & readCommandData(WS15EP2_CMD_READ_TEMP_REGISTER, data, 2);
+
+    // Extract and convert temperature
+    uint16_t tempEncoded = (data[0] << 4) | (data[1] >> 4);
+    *tempDegC = decodeTemperature(tempEncoded);
+
+    return ok;
+}
+
 
 bool Ws15eP2_MasterActivation(void) {
     bool ok = true;
@@ -508,7 +562,7 @@ bool Ws15eP2_DefInit(int tempDegC, bool tempValid) {
 
     // Set temperature
     if (tempValid) {
-        ok = ok & Ws15eP2_SetTemperature(tempDegC);
+        ok = ok & Ws15eP2_WriteTemperature(tempDegC);
     }
 
     // Load LUT from OTP
@@ -545,17 +599,16 @@ bool Ws15eP2_DefInitFull() {
     ok = ok & Ws15eP2_SetRAMyAddress(199, 0);
 
     // Set BorderWavefrom
-    // NOTE: the command missed in the datasheet but occurs in Arduino example
+    // NOTE: the command missed in the original datasheet, taken from Arduino example and SSD1681 datasheet
     uint8_t borderWaveformData = 0x01;
-    ok = ok & Ws15eP2_SendGenericCommand(0x3C, &borderWaveformData, sizeof(borderWaveformData));
+    ok = ok & Ws15eP2_SendGenericCommand(WS15EP2_CMD_BORDER_WAVEFORM, &borderWaveformData, sizeof(borderWaveformData));
 
     // Command 0x18
     // NOTE: the command missed in the datasheet but occurs in Arduino example
     uint8_t command18Data = 0x80;
-    ok = ok & Ws15eP2_SendGenericCommand(0x18, &command18Data, sizeof(command18Data));
+    ok = ok & Ws15eP2_SendGenericCommand(WS15EP2_CMD_TEMP_SENSOR, &command18Data, sizeof(command18Data));
 
     // Setup display update sequence - load Temperature and waveform setting
-    // TODO: should we actually pass the temperature value? It is missed in the example
     ok = ok & Ws15eP2_SetDisplayUpdateSequence(WS15EP2_UPD_SEQ_EC_LT_L1_DC);
 
     // set RAM x address count to 0
@@ -589,12 +642,12 @@ bool Ws15eP2_DefInitFullPartial() {
 
     // Send command 0x37
     uint8_t command37Data[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00};
-    ok = ok & Ws15eP2_SendGenericCommand(0x37, command37Data, sizeof(command37Data));
+    ok = ok & Ws15eP2_SendGenericCommand(WS15EP2_CMD_WRITE_DISPLAY_OPTION, command37Data, sizeof(command37Data));
 
     // Set BorderWavefrom
     // NOTE: the command missed in the datasheet but occurs in Arduino example
     uint8_t borderWaveformData = 0x80;
-    ok = ok & Ws15eP2_SendGenericCommand(0x3C, &borderWaveformData, sizeof(borderWaveformData));
+    ok = ok & Ws15eP2_SendGenericCommand(WS15EP2_CMD_BORDER_WAVEFORM, &borderWaveformData, sizeof(borderWaveformData));
 
     // Setup display update sequence - just enable clock and analog
     ok = ok & Ws15eP2_SetDisplayUpdateSequence(WS15EP2_UPD_SEQ_EC_EA);
@@ -722,11 +775,19 @@ int Ws15eP2_FillArea(int x8x, int y, int width8x, int height, uint8_t value) {
 
 const char *Ws15eP2_UnitTest(void) {
     // Test temperature conversion
-    mu_assert("convertTemperature(127) == 0x7F0", convertTemperature(127) == 0x7F0);
-    mu_assert("convertTemperature(25) == 0x190", convertTemperature(25) == 0x190);
-    mu_assert("convertTemperature(0) == 0x0", convertTemperature(0) == 0x0);
-    mu_assert("convertTemperature(-25) == 0xE70", convertTemperature(-25) == 0xE70);
-    mu_assert("convertTemperature(-55) == 0xC90", convertTemperature(-55) == 0xC90);
+    mu_assert("encodeTemperature(127) == 0x7F0", encodeTemperature(127) == 0x7F0);
+    mu_assert("encodeTemperature(25) == 0x190", encodeTemperature(25) == 0x190);
+    mu_assert("encodeTemperature(0) == 0x0", encodeTemperature(0) == 0x0);
+    mu_assert("encodeTemperature(-25) == 0xE70", encodeTemperature(-25) == 0xE70);
+    mu_assert("encodeTemperature(-55) == 0xC90", encodeTemperature(-55) == 0xC90);
+
+    // Test temperature decoding
+    uint16_t encoded25C = encodeTemperature(25);
+    mu_assert("decodeTemperature(encoded25C) == 25", decodeTemperature(encoded25C) == 25);
+    uint16_t encoded0C = encodeTemperature(0);
+    mu_assert("decodeTemperature(encoded0C) == 0", decodeTemperature(encoded0C) == 0);
+    uint16_t encodedNeg25C = encodeTemperature(-25);
+    mu_assert("decodeTemperature(encodedNeg25C) == -25", decodeTemperature(encodedNeg25C) == -25);
 
     return 0;
 }
