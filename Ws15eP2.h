@@ -11,6 +11,8 @@
 
 #define WS15EP2_DPI 188
 
+#define WS15EP2_MAX_DATA_SIZE (WS15EP2_WIDTH / 8 * WS15EP2_HEIGHT)
+
 // SPI config: MSB first
 #define WS15EP2_SPI_MAX_WRITE_FREQ 20000000 // 20 MHz
 #define WS15EP2_SPI_MAX_READ_FREQ 2500000 // 2.5 MHz
@@ -39,17 +41,52 @@
 #define WS15EP2_DATA_DIRECTION_Y 1
 #define WS15EP2_DATA_DIRECTION_DEF WS15EP2_DATA_DIRECTION_X
 
+#define WS15EP2_RAM_OPTION_NORMAL 0
+#define WS15EP2_RAM_OPTION_BYPASS_0 0b100
+#define WS15EP2_RAM_OPTION_INVERSE 0b1000
+
+// Display update sequence abbreviations:
+// EC - enable clock signal
+// DC - disable clock signal
+// EA - enable analog
+// DA - disable analog
+// L1 - load LUT with Display Mode 1
+// L2 - load LUT with Display Mode 2
+// D1 - display with Display Mode 1
+// D2 - display with Display Mode 2
+// LT - load temperature value
+// DO - disable OSC
+#define WS15EP2_UPD_SEQ_EC 0x80
+#define WS15EP2_UPD_SEQ_DC 0x01
+#define WS15EP2_UPD_SEQ_EC_EA 0xC0
+#define WS15EP2_UPD_SEQ_DA_DC 0x03
+#define WS15EP2_UPD_SEQ_EC_L1_DC 0x91
+#define WS15EP2_UPD_SEQ_EC_L2_DC 0x99
+#define WS15EP2_UPD_SEQ_EC_LT_L1_DC 0xB1
+#define WS15EP2_UPD_SEQ_EC_LT_L2_DC 0xB9
+#define WS15EP2_UPD_SEQ_EC_EA_D1_DA_DO 0xC7
+#define WS15EP2_UPD_SEQ_EC_EA_D2_DA_DO 0xCF
+#define WS15EP2_UPD_SEQ_EC_EA_LT_D1_DA_DO 0xF7
+#define WS15EP2_UPD_SEQ_EC_EA_LT_D2_DA_DO 0xFF
+
+// Error codes
+#define WS15EP2_ERR_CMD_ERROR -1
+#define WS15EP2_ERR_INVALID_X -2
+#define WS15EP2_ERR_INVALID_Y -3
+#define WS15EP2_ERR_INVALID_DATA_SIZE -4
+
 struct Ws15eP2_Platform {
     int (*gpioGet)(int pin);
     void (*gpioSet)(int pin, int state);
 
-    int (*spiSend)(uint8_t *data, int len);
-    int (*spiRecv)(uint8_t *data, int len);
-    
+    void (*spiBegin)(void);
+    int (*spiSendWithCs)(const uint8_t *data, int len, bool keepCS);
+    int (*spiRecvWithCs)(uint8_t *data, int len, bool keepCS);
+    void (*spiEnd)(void);
+
     void (*delayMs)(int ms);
     void (*debugPrint)(const char *fmt, ...);
 
-    uint8_t pinCs;
     uint8_t pinRst;
     uint8_t pinDc;
     uint8_t pinBusy;
@@ -64,7 +101,34 @@ extern uint8_t Ws15eP2_WF_PARTIAL_1IN54_0[159];
 void Ws15eP2_Init(struct Ws15eP2_Platform *platform);
 
 bool Ws15eP2_SetDriverOutput(int muxGateLines, int firstGate, int scanningOrder, int topBottom);
-bool Ws15eP2_SetLut(const uint8_t *lut);
+bool Ws15eP2_DeepSleep(void);
+bool Ws15eP2_SetDataEntryMode(int dataEntryMode, int dataDirection);
+bool Ws15eP2_SoftwareReset(void);
+bool Ws15eP2_SetTemperature(int tempDegC);
+bool Ws15eP2_MasterActivation(void);
+bool Ws15eP2_SetRamContentOption(int redRamOption, int bwRamOption);
+bool Ws15eP2_SetDisplayUpdateSequence(int displayUpdateSequence);
+bool Ws15eP2_WriteRAMbw(const uint8_t *data, int len);
+bool Ws15eP2_WriteRAMred(const uint8_t *data, int len);
+bool Ws15eP2_ReadUserID(uint8_t *data10bytes);
+bool Ws15eP2_SetLutAndVoltage(const uint8_t *lut);
+bool Ws15eP2_WriteUserID(const uint8_t *data10bytes);
+bool Ws15eP2_SetRAMxAddress(int xStart, int xEnd);
+bool Ws15eP2_SetRAMyAddress(int yStart, int yEnd);
+bool Ws15eP2_SetRAMxCounter(int xCounter);
+bool Ws15eP2_SetRAMyCounter(int yCounter);
+
+void Ws15eP2_HardwareReset(void);
+void Ws15eP2_WaitBusy(void);
+
+bool Ws15eP2_DefInit(int tempDegC, bool tempValid);
+bool Ws15eP2_DefInitFull();
+bool Ws15eP2_DefInitPartial();
+
+bool Ws15eP2_RefreshDisplay(void);
+bool Ws15eP2_ClearScreen(bool clearBW, bool clearRed);
+int Ws15eP2_OutputBitmap(int x8x, int y, int width8x, int height, const uint8_t *data, int dataSize);
+int Ws15eP2_FillArea(int x8x, int y, int width8x, int height, uint8_t value);
 
 const char *Ws15eP2_UnitTest(void);
 
