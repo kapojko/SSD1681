@@ -75,12 +75,6 @@
 #define WS15EP2_UPD_SEQ_EC_EA_LT_D1_DA_DO 0xF7
 #define WS15EP2_UPD_SEQ_EC_EA_LT_D2_DA_DO 0xFF
 
-// Error codes
-#define WS15EP2_ERR_CMD_ERROR -1
-#define WS15EP2_ERR_INVALID_X -2
-#define WS15EP2_ERR_INVALID_Y -3
-#define WS15EP2_ERR_INVALID_DATA_SIZE -4
-
 struct Ws15eP2_Platform {
     int (*gpioGet)(int pin);
     void (*gpioSet)(int pin, int state);
@@ -135,8 +129,8 @@ bool Ws15eP2_DefInitPartial();
 
 bool Ws15eP2_RefreshDisplay(void);
 bool Ws15eP2_ClearScreen(bool clearBW, bool clearRed);
-int Ws15eP2_OutputBitmap(int x8x, int y, int width8x, int height, const uint8_t *data, int dataSize);
-int Ws15eP2_FillArea(int x8x, int y, int width8x, int height, uint8_t value);
+bool Ws15eP2_OutputBitmap(int x8x, int y, int width8x, int height, const uint8_t *data, int dataSize);
+bool Ws15eP2_FillArea(int x8x, int y, int width8x, int height, uint8_t value);
 
 const char *Ws15eP2_UnitTest(void);
 

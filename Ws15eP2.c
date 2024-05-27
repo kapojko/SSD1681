@@ -34,7 +34,7 @@
 #define WS15EP2_CMD_SET_RAM_X_COUNTER 0x4E
 #define WS15EP2_CMD_SET_RAM_Y_COUNTER 0x4F
 
-#define CHECK_X(x8x, width8x) (x8x >= 0 && width8x > 0 && x8x + width8x <= WS15EP2_WIDTH / 8 && x8x % 8 == 0 && width8x % 8 == 0)
+#define CHECK_X(x8x, width8x) (x8x >= 0 && width8x > 0 && x8x + width8x <= WS15EP2_WIDTH && x8x % 8 == 0 && width8x % 8 == 0)
 #define CHECK_Y(y, height) (y >= 0 && height > 0 && y + height <= WS15EP2_HEIGHT)
 #define DATA_SIZE(width8x, height) (width8x / 8 * height)
 
@@ -711,21 +711,24 @@ bool Ws15eP2_ClearScreen(bool clearBW, bool clearRed) {
     return ok;
 }
 
-int Ws15eP2_OutputBitmap(int x8x, int y, int width8x, int height, const uint8_t *data, int dataSize) {
+bool Ws15eP2_OutputBitmap(int x8x, int y, int width8x, int height, const uint8_t *data, int dataSize) {
     bool ok = true;
 
     // Check x and y
     if (!CHECK_X(x8x, width8x)) {
-        return WS15EP2_ERR_INVALID_X;
+        platform->debugPrint("OutputBitmap failed, invalid x8x or width8x: %d, %d\r\n", x8x, width8x);
+        return false;
     }
 
     if (!CHECK_Y(y, height)) {
-        return WS15EP2_ERR_INVALID_Y;
+        platform->debugPrint("OutputBitmap failed, invalid y or height: %d, %d\r\n", y, height);
+        return false;
     }
 
     // Check data size
     if (dataSize != DATA_SIZE(width8x, height)) {
-        return WS15EP2_ERR_INVALID_DATA_SIZE;
+        platform->debugPrint("OutputBitmap failed, invalid dataSize: %d, expected %d\r\n", dataSize, DATA_SIZE(width8x, height));
+        return false;
     }
 
     // Set start/end position
@@ -739,19 +742,26 @@ int Ws15eP2_OutputBitmap(int x8x, int y, int width8x, int height, const uint8_t 
     // Write BW RAM
     ok = ok & Ws15eP2_WriteRAMbw(data, dataSize);
 
-    return ok ? 0 : WS15EP2_ERR_CMD_ERROR;
+    if (!ok) {
+        platform->debugPrint("OutputBitmap failed, errors from SPI or commands\r\n");
+        return false;
+    }
+
+    return true;
 }
 
-int Ws15eP2_FillArea(int x8x, int y, int width8x, int height, uint8_t value) {
+bool Ws15eP2_FillArea(int x8x, int y, int width8x, int height, uint8_t value) {
     bool ok = true;
 
     // Check x and y
     if (!CHECK_X(x8x, width8x)) {
-        return WS15EP2_ERR_INVALID_X;
+        platform->debugPrint("FillArea failed, invalid x8x or width8x: %d, %d\r\n", x8x, width8x);
+        return false;
     }
 
     if (!CHECK_Y(y, height)) {
-        return WS15EP2_ERR_INVALID_Y;
+        platform->debugPrint("FillArea failed, invalid y or height: %d, %d\r\n", y, height);
+        return false;
     }
 
     // Set start/end position
@@ -770,7 +780,12 @@ int Ws15eP2_FillArea(int x8x, int y, int width8x, int height, uint8_t value) {
         ok = ok & sendData(&value, sizeof(value));
     }
 
-    return ok ? 0 : WS15EP2_ERR_CMD_ERROR;
+    if (!ok) {
+        platform->debugPrint("FillArea failed, errors from SPI or commands\r\n");
+        return false;
+    }
+
+    return true;
 }
 
 const char *Ws15eP2_UnitTest(void) {
