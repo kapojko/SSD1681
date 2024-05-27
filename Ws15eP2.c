@@ -536,10 +536,12 @@ void Ws15eP2_WaitBusy(void) {
     platform->delayMs(200);
 }
 
-bool Ws15eP2_DefInit(int tempDegC, bool tempValid) {
-    // NOTE: datasheet reference code
-    
+bool Ws15eP2_DefInitFull() {
+    // Based on SSD1681 datasheet plus Arduino example, and keeping in mind the original Waveshare datasheet
+
     bool ok = true;
+
+    // INITIAL CONFIGURATION
 
     // Perform hardware reset
     Ws15eP2_HardwareReset();
@@ -547,35 +549,49 @@ bool Ws15eP2_DefInit(int tempDegC, bool tempValid) {
     // Software reset
     ok = ok & Ws15eP2_SoftwareReset();
 
+    // Wait 10 ms
+    platform->delayMs(10);
+
+    // SEND INITIALIZATION CODE
+
     // Driver output control
-    ok = ok & Ws15eP2_SetDriverOutput(WS15EP2_MUX_GATE_LINES_DEF, WS15EP2_GATE_DEF, WS15EP2_SCAN_DEF,
-        WS15EP2_TOP_BOTTOM);
-    
+    ok = ok & Ws15eP2_SetDriverOutput(WS15EP2_MUX_GATE_LINES_DEF, WS15EP2_GATE_DEF, WS15EP2_SCAN_DEF, WS15EP2_TOP_BOTTOM_REVERSE);
+
     // Data entry mode
     ok = ok & Ws15eP2_SetDataEntryMode(WS15EP2_DATA_ENTRY_YDEC_XINC, WS15EP2_DATA_DIRECTION_X);
 
-    // RAM x address start/end position
-    ok = ok & Ws15eP2_SetRAMxAddress(0, (200 / 8) - 1);
+    // RAM x and y address start/end position
+    ok = ok & Ws15eP2_SetRAMxAddress(0, (WS15EP2_WIDTH / 8) - 1);
+    ok = ok & Ws15eP2_SetRAMyAddress(WS15EP2_HEIGHT - 1, 0);
 
-    // RAM y address start/end position
-    ok = ok & Ws15eP2_SetRAMyAddress(199, 0);
+    // Border waveform
+    uint8_t borderWaveformData = 0x01;
+    ok = ok & Ws15eP2_SendGenericCommand(WS15EP2_CMD_BORDER_WAVEFORM, &borderWaveformData, sizeof(borderWaveformData));
 
-    // Set temperature
-    if (tempValid) {
-        ok = ok & Ws15eP2_WriteTemperature(tempDegC);
-    }
+    // LOAD WAVEFORM LUT
 
-    // Load LUT from OTP
-    // TODO: should we use WS15EP2_UPD_SEQ_EC_L1_DC if temperature not given?
+    // Temperature sensor control
+    ok = ok & Ws15eP2_SetTemperatureSensor(WS15EP2_TEMP_SENSOR_INTERNAL);
+
+    // Setup display update sequence - load Temperature and waveform setting
     ok = ok & Ws15eP2_SetDisplayUpdateSequence(WS15EP2_UPD_SEQ_EC_LT_L1_DC);
 
     // Master activation
     ok = ok & Ws15eP2_MasterActivation();
 
-    return ok;
+    // Set LUT
+    ok = ok & Ws15eP2_SetLutAndVoltage(Ws15eP2_WF_Full_1IN54);
+
+    if (!ok) {
+        platform->debugPrint("Ws15eP2_DefInitFull failed\r\n");
+        return false;
+    }
+
+    return true;
 }
 
-bool Ws15eP2_DefInitFull() {
+#if 0
+bool Ws15eP2_DefInitFull_Arduino() {
     // NOTE: from Arduino example
 
     bool ok = true;
@@ -625,8 +641,10 @@ bool Ws15eP2_DefInitFull() {
     // Hardware initialized
     return ok;
 }
+#endif
 
-bool Ws15eP2_DefInitFullPartial() {
+#if 0
+bool Ws15eP2_DefInitFullPartial_Arduino() {
     // NOTE: from Arduino example
 
     bool ok = true;
@@ -657,6 +675,7 @@ bool Ws15eP2_DefInitFullPartial() {
 
     return ok;
 }
+#endif
 
 bool Ws15eP2_RefreshDisplay(void) {
     bool ok = true;

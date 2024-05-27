@@ -123,9 +123,8 @@ bool Ws15eP2_SetRAMyCounter(int yCounter);
 void Ws15eP2_HardwareReset(void);
 void Ws15eP2_WaitBusy(void);
 
-bool Ws15eP2_DefInit(int tempDegC, bool tempValid);
 bool Ws15eP2_DefInitFull();
-bool Ws15eP2_DefInitPartial();
+// NOTE: no default partial initialization for now
 
 bool Ws15eP2_RefreshDisplay(void);
 bool Ws15eP2_ClearScreen(bool clearBW, bool clearRed);
