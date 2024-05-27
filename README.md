@@ -16,6 +16,7 @@ Bitmaps should have the following format:
 * Every byte bits from left to right (MSB on the left).
 * Bytes from left to right forming image row, the last byte in a row may contain padding bits (row must be byte aligned).
 * Rows from top to bottom forming image.
+* Direct monochrome output (no inversion), background is 1, foreground is 0.
 
 Fonts and bitmaps can be generated using *lcd-image-converter* is used ( [Github](https://github.com/riuson/lcd-image-converter), [Sourceforge](https://sourceforge.net/projects/lcd-image-converter/) ). Conversion rules are saved in `Ws15eP2.xml` file.
 
