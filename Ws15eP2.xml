@@ -3,7 +3,7 @@
   <name>Ws15eP2</name>
   <prepare>
     <convType>0</convType>
-    <monoType>1</monoType>
+    <monoType>0</monoType>
     <edge>130</edge>
     <scanMain>0</scanMain>
     <scanSub>0</scanSub>
