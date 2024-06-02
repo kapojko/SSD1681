@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <preset>
-  <name>Ws15eP2</name>
+  <name>SSD1681</name>
   <prepare>
     <convType>0</convType>
     <monoType>0</monoType>

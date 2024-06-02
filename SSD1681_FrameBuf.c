@@ -1,11 +1,11 @@
 #include <string.h>
 #include <stddef.h>
-#include "Ws15eP2_FrameBuf.h"
+#include "SSD1681_FrameBuf.h"
 
-#define CHECK_X(x) (x >= 0 && x < WS15EP2_WIDTH)
-#define CHECK_Y(y) (y >= 0 && y < WS15EP2_HEIGHT)
-#define CHECK_X_WIDTH(x, width) (x >= 0 && x + width <= WS15EP2_WIDTH)
-#define CHECK_Y_HEIGHT(y, height) (y >= 0 && y + height <= WS15EP2_HEIGHT)
+#define CHECK_X(x) (x >= 0 && x < SSD1681_WIDTH)
+#define CHECK_Y(y) (y >= 0 && y < SSD1681_HEIGHT)
+#define CHECK_X_WIDTH(x, width) (x >= 0 && x + width <= SSD1681_WIDTH)
+#define CHECK_Y_HEIGHT(y, height) (y >= 0 && y + height <= SSD1681_HEIGHT)
 #define CHECK_FB(fbData) (fbData != NULL)
 
 static int fbWidth;
@@ -33,13 +33,13 @@ static void setDataPixel(int x, int y, int width, int height, uint8_t *data, int
     }
 }
 
-bool Ws15eP2_FrameBuf_Init(int width8x_, int height_, uint8_t *fb_, int fbSize_) {
+bool SSD1681_FrameBuf_Init(int width8x_, int height_, uint8_t *fb_, int fbSize_) {
     // Check FB size
     if (width8x_ % 8 != 0) {
         return false;
     }
 
-    int expectedSize = WS15EP2_FRAMEBUF_SIZE(width8x_, height_);
+    int expectedSize = SSD1681_FRAMEBUF_SIZE(width8x_, height_);
     if (fbSize_ != expectedSize) {
         return false;
     }
@@ -56,11 +56,11 @@ bool Ws15eP2_FrameBuf_Init(int width8x_, int height_, uint8_t *fb_, int fbSize_)
     return true;
 }
 
-bool Ws15eP2_FrameBuf_Clear(void) {
-    return Ws15eP2_FrameBuf_Fill(1);
+bool SSD1681_FrameBuf_Clear(void) {
+    return SSD1681_FrameBuf_Fill(1);
 }
 
-bool Ws15eP2_FrameBuf_Fill(int value) {
+bool SSD1681_FrameBuf_Fill(int value) {
     if (!CHECK_FB(fbData)) {
         return false;
     }
@@ -74,7 +74,7 @@ bool Ws15eP2_FrameBuf_Fill(int value) {
     return true;
 }
 
-bool Ws15eP2_FrameBuf_SetPixel(int x, int y, int value) {
+bool SSD1681_FrameBuf_SetPixel(int x, int y, int value) {
     if (!CHECK_X(x) || !CHECK_Y(y) || !CHECK_FB(fbData)) {
         return false;
     }
@@ -84,7 +84,7 @@ bool Ws15eP2_FrameBuf_SetPixel(int x, int y, int value) {
     return true;
 }
 
-bool Ws15eP2_FrameBuf_FillArea(int x, int y, int width, int height, int value) {
+bool SSD1681_FrameBuf_FillArea(int x, int y, int width, int height, int value) {
     if (!CHECK_X_WIDTH(x, width) || !CHECK_Y_HEIGHT(y, height) || !CHECK_FB(fbData)) {
         return false;
     }
@@ -99,7 +99,7 @@ bool Ws15eP2_FrameBuf_FillArea(int x, int y, int width, int height, int value) {
     return true;
 }
 
-bool Ws15eP2_FrameBuf_OutputBitmap(int x, int y, int width, int height, const uint8_t *data, int dataSize) {
+bool SSD1681_FrameBuf_OutputBitmap(int x, int y, int width, int height, const uint8_t *data, int dataSize) {
     if (!CHECK_X_WIDTH(x, width) || !CHECK_Y_HEIGHT(y, height) || !CHECK_FB(fbData)) {
         return false;
     }

@@ -1,6 +1,8 @@
-# ws15ep2
+# SSD1681
 
-Platform-agnostic library for Waveshare 1.5inch e-Paper V2 module for embedded applications.
+Platform-agnostic library for SSD1681 E-Ink displays for embedded applications. Example hardware:
+
+* Waveshare 1.5inch e-Paper V2.
 
 ## Output modes
 
@@ -18,7 +20,7 @@ Bitmaps should have the following format:
 * Rows from top to bottom forming image.
 * Direct monochrome output (no inversion), background is 1, foreground is 0.
 
-Fonts and bitmaps can be generated using *lcd-image-converter* is used ( [Github](https://github.com/riuson/lcd-image-converter), [Sourceforge](https://sourceforge.net/projects/lcd-image-converter/) ). Conversion rules are saved in `Ws15eP2.xml` file.
+Fonts and bitmaps can be generated using *lcd-image-converter* is used ( [Github](https://github.com/riuson/lcd-image-converter), [Sourceforge](https://sourceforge.net/projects/lcd-image-converter/) ). Conversion rules are saved in `SSD1681.xml` file.
 
 ## Testing
 

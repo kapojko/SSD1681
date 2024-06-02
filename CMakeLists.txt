@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(Ws15eP2_Test C)
+project(SSD1681_Test C)
 
 # This CMakeLists.txt is for testing purposes only.
 add_compile_definitions(TESTING)
@@ -16,14 +16,14 @@ endif()
 
 # Collect all source files
 set(SOURCES
-Ws15eP2.c)
-add_executable(Ws15eP2_Test ${SOURCES} Ws15eP2_Test.c)
+    SSD1681.c)
+add_executable(SSD1681_Test ${SOURCES} SSD1681_Test.c)
 
 # Setup testing
 enable_testing()
 include(CTest)
 
 add_test(
-    NAME Ws15eP2_UnitTest
-    COMMAND Ws15eP2_Test
+    NAME SSD1681_UnitTest
+    COMMAND SSD1681_Test
 )

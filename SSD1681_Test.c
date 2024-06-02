@@ -1,10 +1,10 @@
 #ifdef TESTING
 
 #include <stdio.h>
-#include "Ws15eP2.h"
+#include "SSD1681.h"
 
 int main(void) {
-    const char *unitTestResult = Ws15eP2_UnitTest();
+    const char *unitTestResult = SSD1681_UnitTest();
     if (unitTestResult == 0) {
         printf("UNIT TEST PASSED\n");
         return 0;
