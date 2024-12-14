@@ -99,6 +99,21 @@ bool SSD1681_FrameBuf_FillArea(int x, int y, int width, int height, int value) {
     return true;
 }
 
+bool SSD1681_FrameBuf_FillArea_R90(int x, int y, int width, int height, int value) {
+    if (!CHECK_Y_HEIGHT(x, width) || !CHECK_X_WIDTH(y, height) || !CHECK_FB(fbData)) {
+        return false;
+    }
+
+    // FIXME: optimize
+    for (int y1 = y; y1 < y + height; y1++) {
+        for (int x1 = x; x1 < x + width; x1++) {
+            setDataPixel(y1, fbHeight - 1 - x1, fbWidth, fbHeight, fbData, value);
+        }
+    }
+
+    return true;
+}
+
 bool SSD1681_FrameBuf_OutputBitmap(int x, int y, int width, int height, const uint8_t *data, int dataSize) {
     if (!CHECK_X_WIDTH(x, width) || !CHECK_Y_HEIGHT(y, height) || !CHECK_FB(fbData)) {
         return false;
@@ -116,6 +131,29 @@ bool SSD1681_FrameBuf_OutputBitmap(int x, int y, int width, int height, const ui
         for (int x1 = x; x1 < x + width; x1++) {
             int value = getDataPixel(x1 - x, y1 - y, width, height, data);
             setDataPixel(x1, y1, fbWidth, fbHeight, fbData, value);
+        }
+    }
+
+    return true;
+}
+
+bool SSD1681_FrameBuf_OutputBitmap_R90(int x, int y, int width, int height, const uint8_t *data, int dataSize) {
+    if (!CHECK_Y_HEIGHT(x, width) || !CHECK_X_WIDTH(y, height) || !CHECK_FB(fbData)) {
+        return false;
+    }
+
+    // Check data size
+    int widthBytes = (width % 8) ? (width / 8) + 1 : width / 8;
+    int expectedSize = widthBytes * height;
+    if (dataSize != expectedSize) {
+        return false;
+    }
+
+    // FIXME: optimize
+    for (int y1 = y; y1 < y + height; y1++) {
+        for (int x1 = x; x1 < x + width; x1++) {
+            int value = getDataPixel(x1 - x, y1 - y, width, height, data);
+            setDataPixel(y1, fbHeight - 1 - x1, fbWidth, fbHeight, fbData, value);
         }
     }
 

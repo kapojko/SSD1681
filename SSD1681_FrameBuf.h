@@ -13,6 +13,9 @@ bool SSD1681_FrameBuf_Fill(int value);
 bool SSD1681_FrameBuf_SetPixel(int x, int y, int value);
 
 bool SSD1681_FrameBuf_FillArea(int x, int y, int width, int height, int value);
+bool SSD1681_FrameBuf_FillArea_R90(int x, int y, int width, int height, int value);
+
 bool SSD1681_FrameBuf_OutputBitmap(int x, int y, int width, int height, const uint8_t *data, int dataSize);
+bool SSD1681_FrameBuf_OutputBitmap_R90(int x, int y, int width, int height, const uint8_t *data, int dataSize);
 
 #endif // SSD1681_FRAMEBUF_H
